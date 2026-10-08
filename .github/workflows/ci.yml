@@ -24,8 +24,9 @@ jobs:
           fetch-depth: 0
 
       - name: Añadir feature al README
+        if: github.event_name == 'pull_request'
         run: |
-          BRANCH="${{ github.head_ref || github.ref_name }}"
+          BRANCH="${{ github.head_ref }}"
           echo "Añadida feature: $BRANCH" >> README.md
 
       - name: Guardar cambio
