@@ -30,8 +30,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add README.md
-          git diff --cached --quiet || git commit -m "Actualizar README con feature"
-          git push
+          git diff --cached --quiet || git commit -m "Actualizar README con feature [skip ci]""
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
 
   validate-dev:
     needs: update-readme
