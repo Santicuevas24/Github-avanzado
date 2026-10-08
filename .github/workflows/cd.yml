@@ -1,0 +1,57 @@
+name: CD
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Incrementar versión
+        run: |
+          VERSION=$(grep -oE 'AppVersion-[0-9]+' README.md | tail -1 | cut -d'-' -f2)
+          if [ -z "$VERSION" ]; then
+            VERSION=0
+          fi
+          NEXT_VERSION=$((VERSION + 1))
+          sed -i "s/AppVersion-$VERSION/AppVersion-$NEXT_VERSION/" README.md
+          echo "Versión actualizada a AppVersion-$NEXT_VERSION"
+          echo "Fecha y hora: $(date '+%Y-%m-%d %H:%M:%S')" >> README.md
+
+      - name: Guardar cambio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --cached --quiet || git commit -m "Actualizar versión del README"
+          git push
+
+  validate-prod:
+    needs: update-readme
+    runs-on: self-hosted
+
+    steps:
+      - name: Validar PROD_TOKEN
+        shell: powershell
+        env:
+          PROD_TOKEN: ${{ secrets.PROD_TOKEN }}
+        run: |
+          if ($env:PROD_TOKEN -eq $env:LOCAL_PROD_TOKEN) {
+            Write-Host "PROD_TOKEN válido"
+          } else {
+            Write-Host "PROD_TOKEN no coincide"
+            exit 1
+          }
